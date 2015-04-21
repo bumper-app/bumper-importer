@@ -9,6 +9,8 @@ import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
 import com.bumper.utils.pojo.People;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.stream.XMLInputFactory;
@@ -28,14 +30,19 @@ public abstract class AbstractParser {
     protected People assignee;
     protected Dataset dataset;
     protected Comment currentComment;
+    protected String baseUrl;
 
-    public void parseFile(String filePath) throws XMLStreamException {
+    public AbstractParser(String baseUrl, Dataset dataset) {
+        this.baseUrl = baseUrl;
+        this.dataset = dataset;
+    }
+
+    public void parseFile(String filePath) throws XMLStreamException, FileNotFoundException {
 
         XMLInputFactory factory = XMLInputFactory.newInstance();
 
         XMLStreamReader reader = factory
-                .createXMLStreamReader(ClassLoader
-                        .getSystemResourceAsStream(filePath));
+                .createXMLStreamReader(new FileReader(filePath));
 
         while (reader.hasNext()) {
 
@@ -44,16 +51,16 @@ public abstract class AbstractParser {
             switch (event) {
 
                 case XMLStreamConstants.START_ELEMENT:
-
                     populateIssueAtOpenningTagTime(reader);
                     break;
 
                 case XMLStreamConstants.CHARACTERS:
-                    tagContent = reader.getText().trim();
+                    tagContent += reader.getText().trim();
                     break;
 
                 case XMLStreamConstants.END_ELEMENT:
                     populateIssueAtClosingTagTime(reader.getLocalName());
+                    tagContent = "";
                     break;
 
             }

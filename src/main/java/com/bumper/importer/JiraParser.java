@@ -6,13 +6,26 @@
 package com.bumper.importer;
 
 import com.bumper.utils.pojo.Comment;
+import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
+import com.bumper.utils.pojo.IssueType;
+import com.bumper.utils.pojo.LifecycleEvent;
 import com.bumper.utils.pojo.LifecycleEventType;
 import com.bumper.utils.pojo.People;
 import com.bumper.utils.pojo.Project;
 import com.bumper.utils.pojo.Resolution;
+import com.bumper.utils.pojo.Severity;
+import com.bumper.utils.pojo.Status;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.stream.XMLStreamReader;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 /**
  *
@@ -20,8 +33,16 @@ import javax.xml.stream.XMLStreamReader;
  */
 public class JiraParser extends AbstractParser {
 
+    public JiraParser(String baseUrl, Dataset dataset) {
+        super(baseUrl, dataset);
+    }
+
     @Override
     protected void populateIssueAtOpenningTagTime(XMLStreamReader reader) {
+
+        if (this.currentIssue == null && reader.getLocalName().compareTo("item") != 0) {
+            return;
+        }
 
         switch (reader.getLocalName()) {
             case "item":
@@ -35,13 +56,25 @@ public class JiraParser extends AbstractParser {
                 currentIssue.setAssignee(
                         new People(reader.getAttributeValue(0)));
                 break;
-            case "key":
-                currentIssue.setExteralId(reader.getAttributeValue(0));
-                break;
             case "comment":
                 this.currentComment = new Comment(
                         new People(reader.getAttributeValue(1)),
                         new Date(reader.getAttributeValue(2)));
+                break;
+            case "type":
+                if (reader.getAttributeValue(0).compareTo("1") == 0) {
+                    this.currentIssue.setIssueType(IssueType.BUG);
+                }
+                break;
+            case "status":
+                if (reader.getAttributeValue(0).compareTo("5") == 0) {
+                    this.currentIssue.setStatus(Status.RESOLVED);
+                }
+                break;
+            case "priority":
+                if (reader.getAttributeValue(0).compareTo("3") == 0) {
+                    this.currentIssue.setSeverity(Severity.MAJOR);
+                }
                 break;
         }
 
@@ -50,13 +83,17 @@ public class JiraParser extends AbstractParser {
     @Override
     protected void populateIssueAtClosingTagTime(String localName) {
 
+        if (this.currentIssue == null) {
+            return;
+        }
+
         switch (localName) {
 
             case "title":
                 this.currentIssue.setShortDescription(tagContent);
                 break;
             case "description":
-                this.currentIssue.setShortDescription(tagContent);
+                this.currentIssue.setLongDescription(tagContent);
                 break;
             case "created":
                 this.currentIssue.addLifeCycleEvent(
@@ -73,9 +110,6 @@ public class JiraParser extends AbstractParser {
                 this.currentIssue.addLifeCycleEvent(
                         new Date(tagContent), this.assignee,
                         LifecycleEventType.RESOLVED);
-                this.currentIssue.addLifeCycleEvent(
-                        new Date(tagContent), this.assignee,
-                        LifecycleEventType.CLOSED);
                 break;
             case "project":
                 this.currentIssue.setProject(
@@ -95,15 +129,60 @@ public class JiraParser extends AbstractParser {
                 this.currentComment.setComment(tagContent);
                 this.currentIssue.addComment(currentComment);
                 break;
+            case "key":
+                currentIssue.setExteralId(tagContent);
+                break;
+            case "environment":
+                currentIssue.setEnvironment(tagContent);
+                break;
             case "item":
                 this.wrapUp();
+                this.currentIssue.setDataset(dataset);
                 this.issues.add(this.currentIssue);
+                System.err.println(this.currentIssue);
+                System.exit(0);
                 break;
         }
     }
 
     @Override
     protected void wrapUp() {
+
+        try {
+            Document doc = Jsoup
+                    .connect(
+                            this.baseUrl
+                            + "browse/"
+                            + this.currentIssue.getExteralId()
+                            + "?page=com.atlassian.jira.plugin.system.issuetabpanels:all-tabpanel")
+                    .timeout(10 * 1000).get();
+
+            for (Element element : doc.getElementsByClass("issue-data-block")) {
+
+                LifecycleEvent lifecycleEvent = new LifecycleEvent();
+                lifecycleEvent.setPeople(new People(element.getElementsByClass("user-hover").get(0).text()));
+
+                SimpleDateFormat formatter = new SimpleDateFormat("dd/MMM/yy hh:mm");
+                Date parsedDate = formatter.parse(element.getElementsByClass("date").get(0).attr("title"));
+
+                lifecycleEvent.setDate(parsedDate);
+
+                for (Element subElement : element
+                        .getElementsByClass("activity-new-val")) {
+
+                    if (subElement.text().trim().contains("Reopened")) {
+                        lifecycleEvent.setEventType(LifecycleEventType.REOPENNED);
+                        this.currentIssue.addLifeCycleEvent(lifecycleEvent);
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error Jsouping: " + this.currentIssue.getExteralId());
+        } catch (ParseException ex) {
+            Logger.getLogger(JiraParser.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
     }
 
