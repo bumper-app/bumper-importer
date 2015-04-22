@@ -5,17 +5,15 @@
  */
 package com.bumper.importer;
 
+import com.bumper.importer.factories.JiraEnumFactory;
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
-import com.bumper.utils.pojo.IssueType;
 import com.bumper.utils.pojo.LifecycleEvent;
 import com.bumper.utils.pojo.LifecycleEventType;
 import com.bumper.utils.pojo.People;
 import com.bumper.utils.pojo.Project;
 import com.bumper.utils.pojo.Resolution;
-import com.bumper.utils.pojo.Severity;
-import com.bumper.utils.pojo.Status;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -62,19 +60,16 @@ public class JiraParser extends AbstractParser {
                         new Date(reader.getAttributeValue(2)));
                 break;
             case "type":
-                if (reader.getAttributeValue(0).compareTo("1") == 0) {
-                    this.currentIssue.setIssueType(IssueType.BUG);
-                }
+                this.currentIssue.setIssueType(
+                        JiraEnumFactory.getIssueType(new Integer(reader.getAttributeValue(0))));
                 break;
             case "status":
-                if (reader.getAttributeValue(0).compareTo("5") == 0) {
-                    this.currentIssue.setStatus(Status.RESOLVED);
-                }
+                this.currentIssue.setStatus(
+                        JiraEnumFactory.getStatus(new Integer(reader.getAttributeValue(0))));
                 break;
             case "priority":
-                if (reader.getAttributeValue(0).compareTo("3") == 0) {
-                    this.currentIssue.setSeverity(Severity.MAJOR);
-                }
+                this.currentIssue.setSeverity(
+                        JiraEnumFactory.getSeverity(new Integer(reader.getAttributeValue(0))));
                 break;
         }
 
