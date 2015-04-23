@@ -5,46 +5,42 @@
  */
 package com.bumper.importer.factories;
 
-import com.bumper.utils.pojo.IssueType;
-import com.bumper.utils.pojo.Severity;
-import com.bumper.utils.pojo.Status;
-
 /**
  *
  * @author math
  */
-public class JiraEnumFactory {
+public class JiraStringFactory {
 
-    public static Status getStatus(int id) {
+    public static String getStatus(int id) {
         switch (id) {
             case 5:
-                return Status.RESOLVED;
+                return "resolved";
             default:
                 return null;
         }
     }
 
-    public static Severity getSeverity(int id) {
+    public static String getSeverity(int id) {
         switch (id) {
             case 1:
-                return Severity.TRIVIAL;
+                return "trivial";
             case 2:
-                return Severity.MINOR;
+                return "minor";
             case 3:
-                return Severity.MAJOR;
+                return "major";
             case 4:
-                return Severity.CRITICAL;
+                return "critical";
             case 5:
-                return Severity.BLOCKER;
+                return "blocker";
             default:
                 return null;
         }
     }
 
-    public static IssueType getIssueType(int id) {
+    public static String getIssueType(int id) {
         switch (id) {
             case 1:
-                return IssueType.BUG;
+                return "bug";
             default:
                 return null;
         }

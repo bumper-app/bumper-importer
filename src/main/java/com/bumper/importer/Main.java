@@ -5,6 +5,8 @@
  */
 package com.bumper.importer;
 
+import com.bumper.importer.parsers.AbstractParser;
+import com.bumper.importer.parsers.BugzillaParser;
 import com.bumper.utils.pojo.Dataset;
 import java.io.FileNotFoundException;
 import javax.xml.stream.XMLStreamException;
@@ -18,11 +20,14 @@ public class Main {
     public static void main(String[] args) throws XMLStreamException, FileNotFoundException {
 
         AbstractParser parser;
-        parser = new JiraParser("https://issues.apache.org/jira/",
-                new Dataset("Netbeans"));
+//        parser = new JiraParser("https://issues.apache.org/jira/",
+//                new Dataset("Apache"));
+//
+//        parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/jira/apachejira.xml");
 
-        parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/jira/apachejira.xml");
+        parser = new BugzillaParser(new Dataset("Netbeans"), "https://netbeans.org/bugzilla/", "Quality Engineering");
 
+        parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/netbeans.xml");
     }
 
 }

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.bumper.importer;
+package com.bumper.importer.parsers;
 
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
@@ -31,10 +31,17 @@ public abstract class AbstractParser {
     protected Dataset dataset;
     protected Comment currentComment;
     protected String baseUrl;
+    protected String integrationTestName;
 
     public AbstractParser(String baseUrl, Dataset dataset) {
         this.baseUrl = baseUrl;
         this.dataset = dataset;
+    }
+
+    public AbstractParser(Dataset dataset, String baseUrl, String integrationTestName) {
+        this.dataset = dataset;
+        this.baseUrl = baseUrl;
+        this.integrationTestName = integrationTestName;
     }
 
     public void parseFile(String filePath) throws XMLStreamException, FileNotFoundException {

@@ -3,17 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.bumper.importer;
+package com.bumper.importer.parsers;
 
-import com.bumper.importer.factories.JiraEnumFactory;
+import com.bumper.importer.factories.JiraStringFactory;
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
 import com.bumper.utils.pojo.LifecycleEvent;
-import com.bumper.utils.pojo.LifecycleEventType;
 import com.bumper.utils.pojo.People;
 import com.bumper.utils.pojo.Project;
-import com.bumper.utils.pojo.Resolution;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -61,15 +59,15 @@ public class JiraParser extends AbstractParser {
                 break;
             case "type":
                 this.currentIssue.setIssueType(
-                        JiraEnumFactory.getIssueType(new Integer(reader.getAttributeValue(0))));
+                        JiraStringFactory.getIssueType(new Integer(reader.getAttributeValue(0))));
                 break;
             case "status":
                 this.currentIssue.setStatus(
-                        JiraEnumFactory.getStatus(new Integer(reader.getAttributeValue(0))));
+                        JiraStringFactory.getStatus(new Integer(reader.getAttributeValue(0))));
                 break;
             case "priority":
                 this.currentIssue.setSeverity(
-                        JiraEnumFactory.getSeverity(new Integer(reader.getAttributeValue(0))));
+                        JiraStringFactory.getSeverity(new Integer(reader.getAttributeValue(0))));
                 break;
         }
 
@@ -93,10 +91,10 @@ public class JiraParser extends AbstractParser {
             case "created":
                 this.currentIssue.addLifeCycleEvent(
                         new Date(tagContent), this.assignee,
-                        LifecycleEventType.CREATED);
+                        "created");
                 break;
             case "resolution":
-                this.currentIssue.setResolution(Resolution.FIXED);
+                this.currentIssue.setResolution("fixed");
                 break;
             case "version":
                 this.currentIssue.setTargetVersion(tagContent);
@@ -104,7 +102,7 @@ public class JiraParser extends AbstractParser {
             case "resolved":
                 this.currentIssue.addLifeCycleEvent(
                         new Date(tagContent), this.assignee,
-                        LifecycleEventType.RESOLVED);
+                        "resolved");
                 break;
             case "project":
                 this.currentIssue.setProject(
@@ -166,14 +164,13 @@ public class JiraParser extends AbstractParser {
                         .getElementsByClass("activity-new-val")) {
 
                     if (subElement.text().trim().contains("Reopened")) {
-                        lifecycleEvent.setEventType(LifecycleEventType.REOPENNED);
+                        lifecycleEvent.setEventType("reopened");
                         this.currentIssue.addLifeCycleEvent(lifecycleEvent);
                     }
                 }
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
             System.err.println("Error Jsouping: " + this.currentIssue.getExteralId());
         } catch (ParseException ex) {
             Logger.getLogger(JiraParser.class.getName()).log(Level.SEVERE, null, ex);
