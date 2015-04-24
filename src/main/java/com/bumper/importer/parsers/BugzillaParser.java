@@ -28,6 +28,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -43,14 +45,30 @@ import org.jsoup.nodes.Element;
  */
 public class BugzillaParser extends AbstractParser {
 
-    private List<String> revisions = new ArrayList<>();
+    private final List<String> revisions;
+    private final ExecutorService executor;
+    private boolean externalDownload = true;
+    private boolean changesetExtraction = true;
 
     public BugzillaParser(String baseUrl, Dataset dataset) {
         super(baseUrl, dataset);
+        this.revisions = new ArrayList<>();
+        this.executor = Executors.newFixedThreadPool(5);
     }
 
     public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName) {
         super(dataset, baseUrl, integrationTestName);
+        this.revisions = new ArrayList<>();
+        this.executor = Executors.newFixedThreadPool(5);
+    }
+
+    public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName,
+            int threadPoolSize, boolean externalDownload, boolean changesetExtraction) {
+        super(dataset, baseUrl, integrationTestName);
+        this.revisions = new ArrayList<>();
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+        this.externalDownload = externalDownload;
+        this.changesetExtraction = changesetExtraction;
     }
 
     @Override
@@ -157,9 +175,8 @@ public class BugzillaParser extends AbstractParser {
                 this.wrapUp();
                 this.currentIssue.setDataset(dataset);
                 this.issues.add(currentIssue);
-                System.err.println(this.currentIssue);
-                System.out.println(this.revisions);
-                System.exit(0);
+                System.out.println(this.issues.size() + "|" + this.revisions);
+                revisions.clear();
                 break;
         }
     }
@@ -179,28 +196,39 @@ public class BugzillaParser extends AbstractParser {
 
     @Override
     protected void wrapUp() {
-        try {
-            Document doc = Jsoup
-                    .connect(
-                            this.baseUrl
-                            + "show_activity.cgi?id="
-                            + this.currentIssue.getExteralId())
-                    .timeout(10 * 1000).get();
 
-            for (Element e : doc.getElementsByTag("tr")) {
+        if (externalDownload) {
+            try {
+                Document doc = Jsoup
+                        .connect(
+                                this.baseUrl
+                                + "show_activity.cgi?id="
+                                + this.currentIssue.getExteralId())
+                        .timeout(10 * 1000).get();
 
-                if (e.children().size() > 2
-                        && e.child(2).text().compareTo("Status") == 0) {
-                    this.currentIssue.addLifeCycleEvent(parseDate(e.child(1).text()),
-                            new People(e.child(0).text()),
-                            e.child(4).text().toLowerCase());
+                for (Element e : doc.getElementsByTag("tr")) {
+
+                    if (e.children().size() > 2
+                            && e.child(2).text().compareTo("Status") == 0) {
+                        this.currentIssue.addLifeCycleEvent(parseDate(e.child(1).text()),
+                                new People(e.child(0).text()),
+                                e.child(4).text().toLowerCase());
+                    }
+
                 }
 
+            } catch (IOException e) {
+                System.err.println("Error Jsouping: " + this.currentIssue.getExteralId());
             }
+        }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error Jsouping: " + this.currentIssue.getExteralId());
+        if (changesetExtraction) {
+            for (String revision : revisions) {
+                System.out.println(revision);
+
+                executor.execute(new CommandRunnable(revision, this.currentIssue.getExteralId()));
+
+            }
         }
 
     }
@@ -211,8 +239,49 @@ public class BugzillaParser extends AbstractParser {
 
         while (m.find()) {
 
-            revisions.add(m.group());
+            String rev = m.group();
+            if (!rev.startsWith("20")) {
+                revisions.add(rev);
+            }
 
+        }
+
+    }
+
+    public class CommandRunnable implements Runnable {
+
+        private final String revision;
+        private final String exteralId;
+
+        public CommandRunnable(String revision, String exteralId) {
+            this.revision = revision;
+            this.exteralId = exteralId;
+        }
+
+        @Override
+        public void run() {
+            //TODO: parametrize this
+            String command = "/home/math/NetBeansProjects/bumper-scripts/maven_extractor.sh "
+                    + revision + " " + exteralId
+                    + " /home/math/Documents/source/bugs/netbeans/main/ "
+                    + "/home/math/Documents/source/bugs/netbeans/";
+
+            Process p;
+
+            try {
+                p = Runtime
+                        .getRuntime()
+                        .exec(command);
+
+                p.waitFor();
+
+                System.out.println("--------------------" + revision + "|" + exteralId);
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(BugzillaParser.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
     }

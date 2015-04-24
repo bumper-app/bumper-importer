@@ -53,23 +53,27 @@ public abstract class AbstractParser {
 
         while (reader.hasNext()) {
 
-            int event = reader.next();
+            try {
+                int event = reader.next();
 
-            switch (event) {
+                switch (event) {
 
-                case XMLStreamConstants.START_ELEMENT:
-                    populateIssueAtOpenningTagTime(reader);
-                    break;
+                    case XMLStreamConstants.START_ELEMENT:
+                        populateIssueAtOpenningTagTime(reader);
+                        break;
 
-                case XMLStreamConstants.CHARACTERS:
-                    tagContent += reader.getText().trim();
-                    break;
+                    case XMLStreamConstants.CHARACTERS:
+                        tagContent += reader.getText().trim();
+                        break;
 
-                case XMLStreamConstants.END_ELEMENT:
-                    populateIssueAtClosingTagTime(reader.getLocalName());
-                    tagContent = "";
-                    break;
-
+                    case XMLStreamConstants.END_ELEMENT:
+                        populateIssueAtClosingTagTime(reader.getLocalName());
+                        tagContent = "";
+                        break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                reader.next();
             }
         }
     }
