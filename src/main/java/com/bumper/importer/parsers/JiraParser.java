@@ -5,6 +5,7 @@
  */
 package com.bumper.importer.parsers;
 
+import com.bumper.importer.changesets.AbstractChangesetExtractor;
 import com.bumper.importer.factories.JiraStringFactory;
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
@@ -29,8 +30,8 @@ import org.jsoup.nodes.Element;
  */
 public class JiraParser extends AbstractParser {
 
-    public JiraParser(String baseUrl, Dataset dataset) {
-        super(baseUrl, dataset);
+    public JiraParser(String baseUrl, Dataset dataset, AbstractChangesetExtractor changesetExtractor) {
+        super(baseUrl, dataset, changesetExtractor);
     }
 
     @Override

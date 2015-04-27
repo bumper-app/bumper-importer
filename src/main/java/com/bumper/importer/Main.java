@@ -5,6 +5,7 @@
  */
 package com.bumper.importer;
 
+import com.bumper.importer.changesets.MercurialChangesetExtractor;
 import com.bumper.importer.parsers.AbstractParser;
 import com.bumper.importer.parsers.BugzillaParser;
 import com.bumper.utils.pojo.Dataset;
@@ -25,7 +26,10 @@ public class Main {
 //
 //        parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/jira/apachejira.xml");
 
-        parser = new BugzillaParser(new Dataset("Netbeans"), "https://netbeans.org/bugzilla/", "Quality Engineering");
+        parser = new BugzillaParser(new Dataset("Netbeans"), "https://netbeans.org/bugzilla/",
+                "Quality Engineering",
+                new MercurialChangesetExtractor(4, "/home/math/NetBeansProjects/bumper-scripts/"),
+                false, false, true);
 
         parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/netbeans.xml");
     }

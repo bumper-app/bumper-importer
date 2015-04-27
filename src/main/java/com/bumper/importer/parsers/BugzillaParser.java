@@ -16,6 +16,7 @@
  */
 package com.bumper.importer.parsers;
 
+import com.bumper.importer.changesets.AbstractChangesetExtractor;
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
@@ -28,8 +29,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -46,29 +45,29 @@ import org.jsoup.nodes.Element;
 public class BugzillaParser extends AbstractParser {
 
     private final List<String> revisions;
-    private final ExecutorService executor;
+
     private boolean externalDownload = true;
     private boolean changesetExtraction = true;
+    private boolean diffExtraction = false;
 
-    public BugzillaParser(String baseUrl, Dataset dataset) {
-        super(baseUrl, dataset);
+    public BugzillaParser(String baseUrl, Dataset dataset, AbstractChangesetExtractor changesetExtractor) {
+        super(baseUrl, dataset, changesetExtractor);
         this.revisions = new ArrayList<>();
-        this.executor = Executors.newFixedThreadPool(5);
+
     }
 
-    public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName) {
-        super(dataset, baseUrl, integrationTestName);
+    public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName, AbstractChangesetExtractor changesetExtractor) {
+        super(dataset, baseUrl, integrationTestName, changesetExtractor);
         this.revisions = new ArrayList<>();
-        this.executor = Executors.newFixedThreadPool(5);
     }
 
-    public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName,
-            int threadPoolSize, boolean externalDownload, boolean changesetExtraction) {
-        super(dataset, baseUrl, integrationTestName);
+    public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName, AbstractChangesetExtractor changesetExtractor,
+            boolean externalDownload, boolean changesetExtraction, boolean diffExtraction) {
+        super(dataset, baseUrl, integrationTestName, changesetExtractor);
         this.revisions = new ArrayList<>();
-        this.executor = Executors.newFixedThreadPool(threadPoolSize);
         this.externalDownload = externalDownload;
         this.changesetExtraction = changesetExtraction;
+        this.diffExtraction = diffExtraction;
     }
 
     @Override
@@ -222,11 +221,19 @@ public class BugzillaParser extends AbstractParser {
             }
         }
 
-        if (changesetExtraction) {
-            for (String revision : revisions) {
-                System.out.println(revision);
+        for (String revision : revisions) {
+            if (diffExtraction) {
 
-                executor.execute(new CommandRunnable(revision, this.currentIssue.getExteralId()));
+                this.changesetExtractor.extractWholeFiles(revision + " " + this.currentIssue.getExteralId()
+                        + " /home/math/Documents/source/bugs/netbeans/main/ "
+                        + "/home/math/Documents/source/netbeans_changeset/", revision + "|" + this.currentIssue.getExteralId());
+
+            }
+            if (changesetExtraction) {
+
+                this.changesetExtractor.extractDiffs(revision + " " + this.currentIssue.getExteralId()
+                        + " /home/math/Documents/source/bugs/netbeans/main/ "
+                        + "/home/math/Documents/source/netbeans_changeset/", revision + "|" + this.currentIssue.getExteralId());
 
             }
         }
@@ -248,41 +255,4 @@ public class BugzillaParser extends AbstractParser {
 
     }
 
-    public class CommandRunnable implements Runnable {
-
-        private final String revision;
-        private final String exteralId;
-
-        public CommandRunnable(String revision, String exteralId) {
-            this.revision = revision;
-            this.exteralId = exteralId;
-        }
-
-        @Override
-        public void run() {
-            //TODO: parametrize this
-            String command = "/home/math/NetBeansProjects/bumper-scripts/maven_extractor.sh "
-                    + revision + " " + exteralId
-                    + " /home/math/Documents/source/bugs/netbeans/main/ "
-                    + "/home/math/Documents/source/bugs/netbeans/";
-
-            Process p;
-
-            try {
-                p = Runtime
-                        .getRuntime()
-                        .exec(command);
-
-                p.waitFor();
-
-                System.out.println("--------------------" + revision + "|" + exteralId);
-
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            } catch (InterruptedException ex) {
-                Logger.getLogger(BugzillaParser.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-    }
 }

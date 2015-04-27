@@ -5,6 +5,7 @@
  */
 package com.bumper.importer.parsers;
 
+import com.bumper.importer.changesets.AbstractChangesetExtractor;
 import com.bumper.utils.pojo.Comment;
 import com.bumper.utils.pojo.Dataset;
 import com.bumper.utils.pojo.Issue;
@@ -32,13 +33,14 @@ public abstract class AbstractParser {
     protected Comment currentComment;
     protected String baseUrl;
     protected String integrationTestName;
+    protected AbstractChangesetExtractor changesetExtractor;
 
-    public AbstractParser(String baseUrl, Dataset dataset) {
+    public AbstractParser(String baseUrl, Dataset dataset, AbstractChangesetExtractor changesetExtractor) {
         this.baseUrl = baseUrl;
         this.dataset = dataset;
     }
 
-    public AbstractParser(Dataset dataset, String baseUrl, String integrationTestName) {
+    public AbstractParser(Dataset dataset, String baseUrl, String integrationTestName, AbstractChangesetExtractor changesetExtractor) {
         this.dataset = dataset;
         this.baseUrl = baseUrl;
         this.integrationTestName = integrationTestName;
