@@ -47,8 +47,8 @@ public class BugzillaParser extends AbstractParser {
     private final List<String> revisions;
 
     private boolean externalDownload = true;
-    private boolean changesetExtraction = true;
     private boolean diffExtraction = false;
+    private int indexBug = 0;
 
     public BugzillaParser(String baseUrl, Dataset dataset, AbstractChangesetExtractor changesetExtractor) {
         super(baseUrl, dataset, changesetExtractor);
@@ -62,11 +62,11 @@ public class BugzillaParser extends AbstractParser {
     }
 
     public BugzillaParser(Dataset dataset, String baseUrl, String integrationTestName, AbstractChangesetExtractor changesetExtractor,
-            boolean externalDownload, boolean changesetExtraction, boolean diffExtraction) {
+            boolean externalDownload, boolean diffExtraction) {
         super(dataset, baseUrl, integrationTestName, changesetExtractor);
         this.revisions = new ArrayList<>();
         this.externalDownload = externalDownload;
-        this.changesetExtraction = changesetExtraction;
+        this.changesetExtractor = changesetExtractor;
         this.diffExtraction = diffExtraction;
     }
 
@@ -171,10 +171,10 @@ public class BugzillaParser extends AbstractParser {
                 break;
 
             case "bug":
-                this.wrapUp();
+
                 this.currentIssue.setDataset(dataset);
                 this.issues.add(currentIssue);
-                System.out.println(this.issues.size() + "|" + this.revisions);
+                this.wrapUp();
                 revisions.clear();
                 break;
         }
@@ -221,21 +221,17 @@ public class BugzillaParser extends AbstractParser {
             }
         }
 
-        for (String revision : revisions) {
-            if (diffExtraction) {
-
-                this.changesetExtractor.extractWholeFiles(revision + " " + this.currentIssue.getExteralId()
-                        + " /home/math/Documents/source/bugs/netbeans/main/ "
-                        + "/home/math/Documents/source/netbeans_changeset/", revision + "|" + this.currentIssue.getExteralId());
-
-            }
-            if (changesetExtraction) {
+        if (diffExtraction) {
+            for (String revision : revisions) {
 
                 this.changesetExtractor.extractDiffs(revision + " " + this.currentIssue.getExteralId()
                         + " /home/math/Documents/source/bugs/netbeans/main/ "
-                        + "/home/math/Documents/source/netbeans_changeset/", revision + "|" + this.currentIssue.getExteralId());
+                        + "/home/math/Documents/source/netbeans_changeset/", revision + "|" + this.currentIssue.getExteralId()
+                        + "|" + ++indexBug + "/" + this.issues.size()
+                );
 
             }
+
         }
 
     }

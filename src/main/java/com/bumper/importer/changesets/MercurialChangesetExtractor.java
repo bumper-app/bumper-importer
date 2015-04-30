@@ -29,14 +29,8 @@ public class MercurialChangesetExtractor extends AbstractChangesetExtractor {
     }
 
     @Override
-    public void extractWholeFiles(String command, String ids) {
-        command = this.scriptsDir + "/maven_files_extractor.sh " + command;
-        executor.execute(new CommandRunnable(command, ids));
-    }
-
-    @Override
     public void extractDiffs(String command, String ids) {
-        command = this.scriptsDir + "/maven_diff_extractor.sh " + command;
+        command = this.scriptsDir + "maven_diff_extractor.sh " + command;
         executor.execute(new CommandRunnable(command, ids));
     }
 

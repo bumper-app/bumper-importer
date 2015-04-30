@@ -28,8 +28,8 @@ public class Main {
 
         parser = new BugzillaParser(new Dataset("Netbeans"), "https://netbeans.org/bugzilla/",
                 "Quality Engineering",
-                new MercurialChangesetExtractor(4, "/home/math/NetBeansProjects/bumper-scripts/"),
-                false, false, true);
+                new MercurialChangesetExtractor(5, "bash /home/math/NetBeansProjects/bumper-scripts/"),
+                false, true);
 
         parser.parseFile("/home/math/Documents/Bug_Taxonomy/data/netbeans.xml");
     }

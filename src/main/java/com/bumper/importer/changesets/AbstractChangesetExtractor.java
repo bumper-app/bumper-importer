@@ -33,8 +33,6 @@ public abstract class AbstractChangesetExtractor {
         this.scriptsDir = scriptsDir;
     }
 
-    public abstract void extractWholeFiles(String command, String ids);
-
     public abstract void extractDiffs(String command, String ids);
 
 }
